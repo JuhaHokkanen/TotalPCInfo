@@ -4,12 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Computer Information</title>
-    <style>
-        /* … tyylit kuten aiemmin … */
-    </style>
-    <script>
-        /* toggleDetails-funktio … */
-    </script>
+ 
+            <style>
+/* Tuodaan kaksi eri fonttia Google Fontsista */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Merriweather:wght@400;700&display=swap');
+
+body {
+    font-family: 'Roboto', sans-serif; /* Oletusfontti koko sivulle */
+    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+    margin: 0;
+    padding: 20px;
+    color: #333;
+}
+
+/* Muutetaan h1, h2 ja p -fontiksi "Merriweather" */
+h1, h2, p {
+    font-family: 'Merriweather', serif;
+    text-align: center;
+    margin-bottom: 20px;
+}
+    /* Taulukon perusmuotoilu */
+    table {
+        margin: 20px auto;
+        width: 80%;
+        max-width: 700px;
+        border-collapse: collapse;
+        background-color: white;
+
+
+    }
+
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 10px;
+        text-align: left;
+    }
+
+    /* Ensimmäisen taulukon ensimmäinen sarake (ominaisuuksien nimet) */
+    table:nth-of-type(1) th:first-child,
+    table:nth-of-type(1) td:first-child {
+        background-color: #e0e0e0 !important; /* Harmaa tausta */
+        font-weight: bold;
+        width: 40%;
+    }
+
+    /* Kaikkien taulukoiden ensimmäinen rivi (otsikot) */
+    table tr:first-child th {
+        background-color: #e0e0e0;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    /* Responsiivisuus (mobiilinäytöt) */
+    @media screen and (max-width: 600px) {
+        table {
+            width: 95%;
+        }
+    }
+
+    /* Sivun alatunniste */
+    footer {
+        margin-top: 20px;
+        font-size: 0.8em;
+        text-align: center;
+    }
+
+    card {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        }
+    .card-texts {
+        /* vasen palsta teksteille */
+        flex: 1;
+        }
+    .card-texts p {
+        margin: 0.25rem 0;
+        }
+    .card-chart {
+    /* oikea palsta kaaviolle */
+    margin-left: 1rem;
+    display: flex;
+    align-items: center;
+    }
+    .details {
+    margin-top: 0.5rem;
+  }
+</style>
+
 </head>
 <body>
     <h1>Computer Information</h1>
@@ -99,7 +190,7 @@
   <text x='18' y='22' font-size='8' text-anchor='middle'>76.8%</text>
 </svg></div>
     </div>    <footer>
-        <p>&copy; 2025 Juha Hokkanen. Päivitetty: 2025-05-04 07.43.07</p>
+        <p>&copy; 2025 Juha Hokkanen. Päivitetty: 2025-05-04 07.45.02</p>
     </footer>
 </body>
 </html>
