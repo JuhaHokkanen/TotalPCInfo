@@ -376,6 +376,6 @@ try {
 Write-Host "Odotetaan 60 sekuntia, jotta GitHub Pages ehtii päivittyä..."
 Start-Sleep -Seconds 60
 
-#Avaa päivitetty sivu GitHub Pagesissa
+# Avaa päivitetty sivu GitHub Pagesissa
 # $webAppUrl = "https://juhahokkanen.github.io/pc-info-web/"
 # Start-Process $webAppUrl
