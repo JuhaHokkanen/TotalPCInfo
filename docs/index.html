@@ -9,6 +9,54 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         body { font-family: 'Roboto', sans-serif; background-color: #fcfcfc; margin:0; padding:20px; color:#333; }
         h1 { text-align:center; margin-bottom:30px; }
+
+        /* Muutetaan h1, h2 ja p -fontiksi "Merriweather" */
+h1, h2, p {
+    font-family: 'Merriweather', serif;
+    text-align: center;
+    margin-bottom: 20px;
+}
+    /* Taulukon perusmuotoilu */
+    table {
+        margin: 20px auto;
+        width: 80%;
+        max-width: 700px;
+        border-collapse: collapse;
+        background-color: white;
+
+
+    }
+
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 10px;
+        text-align: left;
+    }
+
+    /* Ensimmäisen taulukon ensimmäinen sarake (ominaisuuksien nimet) */
+    table:nth-of-type(1) th:first-child,
+    table:nth-of-type(1) td:first-child {
+        background-color: #e0e0e0 !important; /* Harmaa tausta */
+        font-weight: bold;
+        width: 40%;
+    }
+
+    /* Kaikkien taulukoiden ensimmäinen rivi (otsikot) */
+    table tr:first-child th {
+        background-color: #e0e0e0;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    /* Responsiivisuus (mobiilinäytöt) */
+    @media screen and (max-width: 600px) {
+        table {
+            width: 95%;
+        }
+    }
         .cards-container { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; }
         .card { background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; width:300px; box-shadow:0 2px 6px rgba(0,0,0,0.05); transition:box-shadow .2s ease, transform .2s ease; }
         .card:hover { box-shadow:0 4px 10px rgba(0,0,0,0.1); transform:scale(1.02); }
@@ -123,7 +171,7 @@
 </svg></div>
     </div>
     </div>    <footer>
-        <p>&copy; 2025 Juha Hokkanen. Päivitetty: 2025-05-04 07.52.35</p>
+        <p>&copy; 2025 Juha Hokkanen. Päivitetty: 2025-05-04 07.55.13</p>
     </footer>
 </body>
 </html>
