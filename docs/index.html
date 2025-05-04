@@ -5,104 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Computer Information</title>
  
-            <style>
-/* Tuodaan kaksi eri fonttia Google Fontsista */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Merriweather:wght@400;700&display=swap');
-
-body {
-    font-family: 'Roboto', sans-serif; /* Oletusfontti koko sivulle */
-    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-    margin: 0;
-    padding: 20px;
-    color: #333;
-}
-
-/* Muutetaan h1, h2 ja p -fontiksi "Merriweather" */
-h1, h2, p {
-    font-family: 'Merriweather', serif;
-    text-align: center;
-    margin-bottom: 20px;
-}
-    /* Taulukon perusmuotoilu */
-    table {
-        margin: 20px auto;
-        width: 80%;
-        max-width: 700px;
-        border-collapse: collapse;
-        background-color: white;
-
-
-    }
-
-    table, th, td {
-        border: 1px solid black;
-    }
-
-    th, td {
-        padding: 10px;
-        text-align: left;
-    }
-
-    /* Ensimmäisen taulukon ensimmäinen sarake (ominaisuuksien nimet) */
-    table:nth-of-type(1) th:first-child,
-    table:nth-of-type(1) td:first-child {
-        background-color: #e0e0e0 !important; /* Harmaa tausta */
-        font-weight: bold;
-        width: 40%;
-    }
-
-    /* Kaikkien taulukoiden ensimmäinen rivi (otsikot) */
-    table tr:first-child th {
-        background-color: #e0e0e0;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    /* Responsiivisuus (mobiilinäytöt) */
-    @media screen and (max-width: 600px) {
-        table {
-            width: 95%;
-        }
-    }
-
-    /* Sivun alatunniste */
-    footer {
-        margin-top: 20px;
-        font-size: 0.8em;
-        text-align: center;
-    }
-
-    .cards-container { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin:20px auto; width:90%; }
-
-
-    card {
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        }
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        }
-    .card-texts {
-        /* vasen palsta teksteille */
-        flex: 1;
-        }
-    .card-texts p {
-        margin: 0.25rem 0;
-        }
-    .card-chart {
-    /* oikea palsta kaaviolle */
-    margin-left: 1rem;
-    display: flex;
-    align-items: center;
-    }
-    .details {
-    margin-top: 0.5rem;
-  }
-</style>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Merriweather:wght@400;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); margin:0; padding:20px; color:#333; }
+        h1,h2,p { font-family:'Merriweather', serif; text-align:center; }
+        table { margin:20px auto; width:80%; max-width:700px; border-collapse:collapse; background:#fff; }
+        th,td { border:1px solid #ccc; padding:10px; }
+        th:first-child, td:first-child { background:#e0e0e0; font-weight:bold; }
+        footer { text-align:center; font-size:0.8em; margin-top:20px; }
+        .cards-container { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin:20px auto; width:90%; }
+        .card { background:#fff; border:1px solid #ccc; border-radius:8px; padding:1rem; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+        .card-header { display:flex; justify-content:space-between; align-items:flex-start; }
+        .card-texts { flex:1; }
+        .card-texts p { margin:0.25rem 0; }
+        .card-chart { margin-left:1rem; display:flex; align-items:center; }
+    </style>
 
 </head>
 <body>
@@ -203,7 +120,7 @@ h1, h2, p {
 </svg></div>
     </div>
     </div>    <footer>
-        <p>&copy; 2025 Juha Hokkanen. Päivitetty: 2025-05-04 07.49.33</p>
+        <p>&copy; 2025 Juha Hokkanen. Päivitetty: 2025-05-04 07.50.35</p>
     </footer>
 </body>
 </html>
