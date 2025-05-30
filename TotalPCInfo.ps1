@@ -1,4 +1,6 @@
+# ==========================================
 # Kerää järjestelmätiedot
+# ==========================================
 try {
     $computerName = $env:COMPUTERNAME
     $os = Get-CimInstance -ClassName Win32_OperatingSystem
@@ -7,63 +9,69 @@ try {
     $osBuild = $os.BuildNumber
 
     $cpu = Get-CimInstance -ClassName Win32_Processor
-    $processorName = $cpu.Name
-    $processorCores = $cpu.NumberOfCores
+    $processorName    = $cpu.Name
+    $processorCores   = $cpu.NumberOfCores
     $processorThreads = $cpu.ThreadCount
 
     $totalMemory = [math]::Round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
+    $MemorySpeed = (Get-CimInstance -ClassName Win32_PhysicalMemory |  Select-Object -First 1 -ExpandProperty Speed)
+    $Memory = Get-CimInstance -ClassName Win32_PhysicalMemory
+    $MemoryCount = $Memory.count
 
-    $gpu = Get-CimInstance -ClassName Win32_VideoController
-    $gpuName = $gpu[0].Name
+    $gpu        = Get-CimInstance -ClassName Win32_VideoController
+    $gpuName    = $gpu[0].Name
 
-    $bios = Get-CimInstance -ClassName Win32_BIOS
+    $motherboard = Get-CimInstance -ClassName Win32_BaseBoard
+    $motherboardManufacturer = $motherboard.Manufacturer
+    $motherboardProduct = $motherboard.Product
+
+
+    $bios                = Get-CimInstance -ClassName Win32_BIOS
     $biosInfoManufacturer = $bios.Manufacturer
-    $biosInfoVersion = $bios.BIOSVersion
-    $biosInfoReleaseDate = $bios.ReleaseDate
+    $biosInfoVersion      = $bios.BIOSVersion
+    $biosInfoReleaseDate  = $bios.ReleaseDate
 
-    # Kerää nykyisen käyttäjän kansion koon
-    $currentUserPath = $env:USERPROFILE
-    $userFolderSize = (Get-ChildItem -Path $currentUserPath -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
-    $userFolderSizeGB = [math]::Round([double]$userFolderSize / 1GB, 2)
+    # Käyttäjän kansion koko
+    $currentUserPath  = $env:USERPROFILE
+    $userFolderSize   = (Get-ChildItem -Path $currentUserPath -Recurse -File -ErrorAction SilentlyContinue |
+                        Measure-Object -Property Length -Sum).Sum
+    $userFolderSizeGB = [math]::Round($userFolderSize / 1GB, 2)
 
-    $bootTime = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
-    
+    $bootTime = $os.LastBootUpTime
+
+    # Loogiset levyt (3=kiintolevy, 4=verkko)
+    $logicalDisks = Get-CimInstance -ClassName Win32_LogicalDisk
+
+    # Fyysiset levyt firmware-tiedoilla
     $physicalDisks = @{}
     Get-PhysicalDisk | ForEach-Object {
-        $pdisk      = $_
-        $diskNumber = ($pdisk | Get-Disk).Number
-    
+        $diskNumber = ($_ | Get-Disk).Number
         try {
-            # Yritetään noutaa firmware CIM-instanssista
-            $firmware = (Get-CimInstance -Namespace root\Microsoft\Windows\Storage `
-                -ClassName MSFT_PhysicalDisk |
-                Where-Object DeviceId -EQ $diskNumber).FirmwareVersion
-        }
-        catch {
-            # Jos jotain menee pieleen, merkataan firmware puuttuvaksi
+            $firmware = Get-CimInstance -Namespace root\Microsoft\Windows\Storage -ClassName MSFT_PhysicalDisk |
+                        Where-Object DeviceId -EQ $diskNumber |
+                        Select-Object -ExpandProperty FirmwareVersion
+        } catch {
             $firmware = "Ei saatavilla"
         }
-    
-        # Tallennetaan tiedot hash-taulukkoon levyn numerolla avaimena
         $physicalDisks[$diskNumber] = @{
-            BusType         = $pdisk.BusType
-            MediaType       = $pdisk.MediaType
-            Model           = $pdisk.FriendlyName
-            HealthStatus    = $pdisk.HealthStatus.ToString()
-            FirmwareVersion = if ($firmware) { $firmware } else { "Ei saatavilla" }
+            BusType         = $_.BusType
+            MediaType       = $_.MediaType
+            Model           = $_.FriendlyName
+            HealthStatus    = $_.HealthStatus.ToString()
+            FirmwareVersion = $firmware
         }
     }
-    
 
-    
-    # Hanki nykyinen päivämäärä ja kellonaika
     $currentDateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-} catch {
-    Write-Host "Virhe järjestelmätietojen hakemisessa: $_"
+}
+catch {
+    Write-Error "Virhe järjestelmätietojen hakemisessa: $_"
     exit 1
 }
 
-# Luo HTML-sisältö
+# ==========================================
+# Alustetaan HTML ja lisätään head + tyylit
+# ==========================================
 $html = @"
 <!DOCTYPE html>
 <html lang="en">
@@ -71,162 +79,57 @@ $html = @"
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Computer Information</title>
+ 
+    <style>
+        /* Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Merriweather:wght@400;700&display=swap');
 
-        <style>
-/* Tuodaan kaksi eri fonttia Google Fontsista */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Merriweather:wght@400;700&display=swap');
+        /* Base styles */
+        body { font-family: 'Roboto', sans-serif; background-color: #fcfcfc; margin:0; padding:20px; color:#333; }
+        h1, h2, p { font-family: 'Merriweather', serif; text-align:center; margin-bottom:20px; }
 
-body {
-    font-family: 'Roboto', sans-serif; /* Oletusfontti koko sivulle */
-    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-    margin: 0;
-    padding: 20px;
-    color: #333;
-}
+        /* Table styles */
+        table { margin:20px auto; width:80%; max-width:700px; border-collapse:collapse; background:#fff; }
+        table, th, td { border:1px solid #ccc; }
+        th, td { padding:10px; text-align:left; }
+        table:nth-of-type(1) th:first-child, table:nth-of-type(1) td:first-child { background:#e0e0e0; font-weight:bold; width:40%; }
+        table tr:first-child th { background:#e0e0e0; font-weight:bold; text-align:center; }
+        @media screen and (max-width:600px) { table { width:95%; } }
 
-/* Muutetaan h1, h2 ja p -fontiksi "Merriweather" */
-h1, h2, p {
-    font-family: 'Merriweather', serif;
-    text-align: center;
-    margin-bottom: 20px;
-}
-    /* Taulukon perusmuotoilu */
-    table {
-        margin: 20px auto;
-        width: 80%;
-        max-width: 700px;
-        border-collapse: collapse;
-        background-color: white;
-
-
-    }
-
-    table, th, td {
-        border: 1px solid black;
-    }
-
-    th, td {
-        padding: 10px;
-        text-align: left;
-    }
-
-    /* Ensimmäisen taulukon ensimmäinen sarake (ominaisuuksien nimet) */
-    table:nth-of-type(1) th:first-child,
-    table:nth-of-type(1) td:first-child {
-        background-color: #e0e0e0 !important; /* Harmaa tausta */
-        font-weight: bold;
-        width: 40%;
-    }
-
-    /* Kaikkien taulukoiden ensimmäinen rivi (otsikot) */
-    table tr:first-child th {
-        background-color: #e0e0e0;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    /* Responsiivisuus (mobiilinäytöt) */
-    @media screen and (max-width: 600px) {
-        table {
-            width: 95%;
-        }
-    }
-
-    /* Sivun alatunniste */
-    footer {
-        margin-top: 20px;
-        font-size: 0.8em;
-        text-align: center;
-    }
-
-    card {
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        }
-    .card-header {
+        /* Card layout */
+        .cards-container {
         display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+        margin: 30px auto;
+        width: 90%;
+        max-width: 1200px;
         }
-    .card-texts {
-        /* vasen palsta teksteille */
-        flex: 1;
-        }
-    .card-texts p {
-        margin: 0.25rem 0;
-        }
-    .card-chart {
-    /* oikea palsta kaaviolle */
-    margin-left: 1rem;
-    display: flex;
-    align-items: center;
-    }
-    .details {
-    margin-top: 0.5rem;
-  }
-</style>
 
-    <script>
-        // Funktio piilottaa/näyttää lisätiedot-kortin osion
-        function toggleDetails(id, btn) {
-            var element = document.getElementById(id);
-            if (element.classList.contains("show")) {
-                element.classList.remove("show");
-                btn.textContent = "Näytä lisätiedot";
-            } else {
-                element.classList.add("show");
-                btn.textContent = "Piilota lisätiedot";
-            }
-        }
-    </script>
+        .card { background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; width:300px; box-shadow:0 2px 6px rgba(0,0,0,0.05); transition:box-shadow .2s ease, transform .2s ease; }
+        .card:hover { box-shadow:0 4px 10px rgba(0,0,0,0.1); transform:scale(1.02); }
+        .card-header { display:flex; justify-content:space-between; align-items:flex-start; }
+        .card-texts { flex:1; }
+        .card-texts p { margin:4px 0; }
+        .card-chart { margin-left:12px; }
 
+        /* Details toggle */
+        .details { max-height:0; overflow:hidden; transition:max-height .3s ease, opacity .3s ease; opacity:0; }
+        .details.show { max-height:200px; opacity:1; }
+
+        /* Button */
+        button { background:#007bff; color:#fff; border:none; border-radius:6px; padding:8px 12px; cursor:pointer; margin-top:10px; transition:background .2s ease, transform .2s ease; }
+        button:hover { background:#0056b3; transform:scale(1.03); }
+
+        /* Pie chart SVG */
+        .pie { display:block; margin:auto 0; }
+
+        /* Footer */
+        footer { text-align:center; margin-top:40px; font-size:0.9em; color:#666; }
+    </style>
 
 </head>
-"@
-
-
-# ==========================================
-# KÄYDÄÄN LÄPI KAIKKI LOOGISET LEVYT
-# Luodaan jokaisesta levystä HTML-kortti. Jos levyllä ei ole
-# koko- tai vapaa-tilaa, ohitetaan se.
-# ==========================================
-$counter = 0
-foreach ($disk in $logicalDisks) {
-    if (-not ($disk.Size -and $disk.FreeSpace)) { continue }
-
-    $counter++
-    # $detailsId  = "details$counter"
-
-    # Muunnokset gigatavuiksi ja prosenttilaskelmat
-    $sizeGB     = [math]::Round($disk.Size / 1GB, 2)
-    $freeGB     = [math]::Round($disk.FreeSpace / 1GB, 2)
-    $usedGB     = [math]::Round($sizeGB - $freeGB, 2)
-    $usagePct   = [math]::Round(($usedGB / $sizeGB) * 100, 1)
-    $angle      = [math]::Round(360 * ($usedGB / $sizeGB), 1)
-    $volumeName = if ($disk.VolumeName) { $disk.VolumeName } else { "Ei nimeä" }
-
-    # ======================================
-    # SVG-PIIRROKSESSA TARVITTAVAT LASKELMAT
-    # Määritetään kaaren loppukohta ja iso-kaari-lippu
-    # piirrettävälle sektori-osuudelle.
-    # ======================================
-    $largeArcFlag = if ($angle -gt 180) { 1 } else { 0 }
-    $x = [math]::Round(18 + 16 * [math]::Sin($angle * [math]::PI / 180), 2)
-    $y = [math]::Round(18 - 16 * [math]::Cos($angle * [math]::PI / 180), 2)
-
-    # Tulostettava SVG-merkkijono
-    $chartSvg = @"
-<svg width='80' height='80' viewBox='0 0 36 36' class='pie'>
-  <circle cx='18' cy='18' r='16' fill='#eee'/>
-  <path d='M18 2 A16 16 0 $largeArcFlag 1 $x $y L18 18 Z' fill='#007bff'/>
-  <text x='18' y='22' font-size='8' text-anchor='middle' fill='#333'>$usagePct`%</text>
-</svg>
-"@
-
-    $html += @"
-
 <body>
     <h1>Computer Information</h1>
     <table>
@@ -237,145 +140,131 @@ foreach ($disk in $logicalDisks) {
         <tr><th>Processor</th><td>$processorName</td></tr>
         <tr><th>Processor Cores</th><td>$processorCores</td></tr>
         <tr><th>Processor Threads</th><td>$processorThreads</td></tr>
+        <tr><th>Motherboard valmistaja</th><td>$motherboardManufacturer</td></tr>
+        <tr><th>Motherboard Model</th><td>$motherboardProduct</td></tr>
         <tr><th>Total Memory (GB)</th><td>$totalMemory</td></tr>
+        <tr><th>Memory Speed (MHz)</th><td>$MemorySpeed</td></tr>
+        <tr><th>Memory Modules</th><td>$MemoryCount</td></tr>
         <tr><th>GPU</th><td>$gpuName</td></tr>
         <tr><th>BIOS Manufacturer</th><td>$biosInfoManufacturer</td></tr>
         <tr><th>BIOS Version</th><td>$biosInfoVersion</td></tr>
         <tr><th>BIOS Release date</th><td>$biosInfoReleaseDate</td></tr>
         <tr><th>Last Boot time</th><td>$bootTime</td></tr>
     </table>
+
     <h2>Current User Folder Size</h2>
     <table>
         <tr><th>User</th><th>Size (GB)</th></tr>
         <tr><td>$env:USERNAME</td><td>$userFolderSizeGB</td></tr>
-
+    </table>
+        <div class='cards-container'>
 
 "@
 
-if ($disk.DriveType -eq 4) {
-        $html += @"
-<div class='card'>
-  <div class="card-header">
-    <div class="card-texts">
-  <p><strong>Levy:</strong> $($disk.DeviceID) (verkkojako)</p>
-  <p><strong>Nimi:</strong> $volumeName</p>
-  <p><strong>Koko:</strong> $sizeGB GB</p>
-  <p><em>Fyysisiä tietoja ei saatavilla verkkojaolle.</em></p>
-    </div>
-       <div class="card-chart">
-      $chartSvg
-    </div>
-    </div>
-  </div>
+# ==========================================
+# Looppi: levyosioiden kortit
+# ==========================================
+$counter = 0
+foreach ($disk in $logicalDisks) {
+    if (-not ($disk.Size -and $disk.FreeSpace)) { continue }
 
+    $counter++
+    # Muunnokset gigatavuiksi ja SVG-laskelmat
+    $sizeGB   = [math]::Round($disk.Size / 1GB, 2)
+    $freeGB   = [math]::Round($disk.FreeSpace / 1GB, 2)
+    $usedGB   = [math]::Round($sizeGB - $freeGB, 2)
+    $usagePct = [math]::Round(($usedGB / $sizeGB) * 100, 1)
+    $angle    = [math]::Round(360 * ($usedGB / $sizeGB), 1)
+    $largeArc = if ($angle -gt 180) { 1 } else { 0 }
+    $x        = [math]::Round(18 + 16 * [math]::Sin($angle * [math]::PI/180), 2)
+    $y        = [math]::Round(18 - 16 * [math]::Cos($angle * [math]::PI/180), 2)
+    $volumeName = if ($disk.VolumeName) { $disk.VolumeName } else { "Ei nimeä" }
+
+    $chartSvg = @"
+<svg width='80' height='80' viewBox='0 0 36 36'>
+  <circle cx='18' cy='18' r='16' fill='#eee'/>
+  <path d='M18 2 A16 16 0 $largeArc 1 $x $y L18 18 Z' fill='#007bff'/>
+  <text x='18' y='22' font-size='8' text-anchor='middle'>$usagePct`%</text>
+</svg>
+"@
+
+    # Verkko­jaot (DriveType 4) vs. paikalliset (3)
+    if ($disk.DriveType -eq 4) {
+        $html += @"
+    <div class='card'>
+      <p><strong>Disk:</strong> $($disk.DeviceID) (network share)</p>
+      <p><strong>Name:</strong> $volumeName</p>
+      <p><strong>Size:</strong> $sizeGB GB</p>
+      <p><em>Physical data is not available for network share.</em></p>
+      <div class='card-chart'>$chartSvg</div>
+
+        </div>
 "@
         continue
     }
 
+    # Paikalliset osiot: haetaan fyysisen levyn tiedot
     try {
         $driveLetter = $disk.DeviceID.TrimEnd(':')
-        $partition   = Get-Partition -DriveLetter $driveLetter -ErrorAction Stop
-        $diskNumber  = ($partition | Get-Disk).Number
-
+        $diskNumber  = (Get-Partition -DriveLetter $driveLetter | Get-Disk).Number
         $info        = $physicalDisks[$diskNumber]
         $busType     = $info.BusType
-        $mediaType   = $info.MediaType
+        $mediaType   = if ($info.MediaType -and $info.MediaType -ne 'Unspecified') { $info.MediaType }
+                       else { switch ($busType) { 'SATA' {'HDD'} 'SAS' {'HDD'} 'NVMe' {'SSD (NVMe)'} default {''} } }
         $model       = $info.Model
         $health      = $info.HealthStatus
         $firmware    = $info.FirmwareVersion
-
-        # Jos mediaType on epäspesifioitu, korvataan järkevämmällä
-        if (-not $mediaType -or $mediaType -eq 'Unspecified') {
-            switch ($busType) {
-                'SATA' { $mediaType = 'HDD' }
-                'SAS'  { $mediaType = 'HDD' }
-                'NVMe' { $mediaType = 'SSD (NVMe)' }
-                default { $mediaType = '' }
-            }
-        }
-        # Aseta puuttuvat malli-, terveystila- ja firmware-arvot
-        foreach ($prop in 'model','health','firmware') {
-            if (-not (Get-Variable $prop -Scope 0).Value) {
-                Set-Variable -Name $prop -Value 'Ei saatavilla'
-            }
-        }
     }
     catch {
-        # Jos jokin menee pieleen, merkitään kaikki puuttuviksi
-        $busType   = 'Tuntematon'
-        $mediaType = 'Ei saatavilla'
-        $model     = 'Ei saatavilla'
-        $health    = 'Ei saatavilla'
-        $firmware  = 'Ei saatavilla'
+        $busType = $mediaType = $model = $health = $firmware = 'Ei saatavilla'
     }
 
     $html += @"
-<div class='card'>
-  <div class="card-header">
-    <div class="card-texts">
-  <p><strong>Levy:</strong> $($disk.DeviceID)</p>
-  <p><strong>Nimi:</strong> $volumeName</p>
-  <p><strong>Koko:</strong> $sizeGB GB</p>
-      <p><strong>Vapaa:</strong> $freeGB GB</p>
-    <p><strong>Käytetty:</strong> $usedGB GB ($usagePct`%)</p>
-    <p><strong>Levyn tyyppi:</strong> $busType $mediaType</p>
-    <p><strong>Malli:</strong> $model</p>
-    <p><strong>Terveystila:</strong> $health</p>
-    <p><strong>Firmware:</strong> $firmware</p>
+    <div class='card'>
+      <p><strong>Disk:</strong> $($disk.DeviceID)</p>
+      <p><strong>Name:</strong> $volumeName</p>
+      <p><strong>Size:</strong> $sizeGB GB</p>
+      <p><strong>Free:</strong> $freeGB GB</p>
+      <p><strong>Used:</strong> $usedGB GB ($usagePct`%)</p>
+      <p><strong>Disk type:</strong> $busType $mediaType</p>
+      <p><strong>Model:</strong> $model</p>
+      <p><strong>Health:</strong> $health</p>
+      <p><strong>Firmware:</strong> $firmware</p>
+            <div class='card-chart'>$chartSvg</div>
     </div>
-    <div class="card-chart">
-      $chartSvg
-    </div>
-</div>
-</div>
+           
 "@
 }
 
+# ==========================================
+# Lopetus: footeri ja sulkevat tagit
+# ==========================================
 $html += @"
-<footer>
-    <p>&copy; 2025 Juha Hokkanen. Päivitetty: $currentDateTime</p>
-</footer>
+</div>
+    <footer>
+        <p>&copy; 2025 Juha Hokkanen. Updated: $currentDateTime</p>
+    </footer>
 </body>
 </html>
 "@
 
-# Päivitä tiedot GitHub-repositorioon
-$localRepoPath = "C:\Koodit\scriptit\TotalPCInfo"
+# ==========================================
+# Tallennus ja GitHub-push
+# ==========================================
+$localRepoPath    = "C:\Koodit\scriptit\TotalPCInfo"
+$destinationFolder = Join-Path $localRepoPath docs
+$htmlPath         = Join-Path $destinationFolder index.html
 
-if (-not (Test-Path -Path $localRepoPath)) {
-    Write-Host "Virhe: GitHub-repositoriota ei löydy polusta $localRepoPath. Tarkista polku."
-    exit 1
-}
-
-# Määritä kohdekansio, käytetään "docs" kansiota
-$destinationFolder = "$localRepoPath\docs"
-if (-not (Test-Path -Path $destinationFolder)) {
+if (-not (Test-Path $destinationFolder)) {
     New-Item -Path $destinationFolder -ItemType Directory | Out-Null
-    Write-Host "Luotiin kansio: $destinationFolder"
 }
 
-# Luo ja tallenna HTML-tiedosto suoraan GitHub-repositorioon (docs/index.html)
-$htmlPath = "$destinationFolder\index.html"
+$html | Out-File -FilePath $htmlPath -Encoding utf8
+Set-Location $localRepoPath
+git add docs/index.html
+git commit -m "Päivitetty index.html – $currentDateTime"
+git push origin main
 
-# Kirjoita HTML-tiedosto levylle
-$htmlContent | Out-File -FilePath $htmlPath -Encoding utf8
-Write-Host "index.html tallennettu polkuun $htmlPath"
+Write-Host "HTML-sivu generoitu ja pusattu GitHubiin: $htmlPath"
 
-Set-Location -Path $localRepoPath
-try {
-    git add docs/index.html
-    git commit -m "Päivitetty index.html kansioon 'docs' - $currentDateTime"
-    git push origin main
-    Write-Host "Tietokoneen tiedot päivitetty GitHubiin."
-} catch {
-    Write-Host "Virhe GitHub-pushin aikana: $_"
-    exit 1
-}
-
-# Odota 60 sekuntia ennen kuin avaa GitHub Pages -sivun
-Write-Host "Odotetaan 60 sekuntia, jotta GitHub Pages ehtii päivittyä..."
-Start-Sleep -Seconds 60
-
-# Avaa päivitetty sivu GitHub Pagesissa
-# $webAppUrl = "https://juhahokkanen.github.io/pc-info-web/"
-# Start-Process $webAppUrl
+Write-Host "`n🌐 Raportti julkaistu: https://juhahokkanen.github.io/TotalPCInfo/"
