@@ -267,4 +267,25 @@ git push origin main
 
 Write-Host "HTML-sivu generoitu ja pusattu GitHubiin: $htmlPath"
 
+<<<<<<< HEAD
 Write-Host "`n🌐 Raportti julkaistu: https://juhahokkanen.github.io/TotalPCInfo/"
+=======
+Set-Location -Path $localRepoPath
+try {
+    git add docs/index.html
+    git commit -m "Päivitetty index.html kansioon 'docs' - $currentDateTime"
+    git push origin main
+    Write-Host "Tietokoneen tiedot päivitetty GitHubiin."
+} catch {
+    Write-Host "Virhe GitHub-pushin aikana: $_"
+    exit 1
+}
+
+# Odota 60 sekuntia ennen kuin avaa GitHub Pages -sivun
+Write-Host "Odotetaan 60 sekuntia, jotta GitHub Pages ehtii päivittyä..."
+Start-Sleep -Seconds 60
+
+# Avaa päivitetty sivu GitHub Pagesissa
+# $webAppUrl = "https://juhahokkanen.github.io/TotalPCInfo/"
+# Start-Process $webAppUrl
+>>>>>>> 37223431a7697b2e7164c2a03f3876f6e1b3fcd2

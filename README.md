@@ -1,1 +1,1 @@
-Testi
+https://juhahokkanen.github.io/TotalPCInfo/
